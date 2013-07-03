@@ -1,0 +1,58 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>net.java.jaspicoil</groupId>
+	<artifactId>jaspic-providers</artifactId>
+	<version>0.2.10-SNAPSHOT</version>
+	<name>JaspicOil Providers Suite</name>
+	<description>&nbsp;A set of JASPIC (JSR-196) compatible SAM providers :
+		- MSPacSpnego : Qualified SSO using SPNEGO/Kerberos with MS-PAC with advanced security features
+		- SimpleBasic : Simple HTTP Basic Implementation on top of JAAS LoginModule
+
+Next steps :
+		- Cover Java EE Classic authentication scenarios
+			-- Basic authentication (SimpleBasic proi
+			-- Digest authentication
+			-- Form based authentication
+			-- TLS (attribute javax.servlet.request.X509Certificate)
+		- Advanced
+			-- Qualified SSO for MS-PAC (Microsoft ActiveDirectorySamba 4+)
+			-- SOAP Support
+			-- JMS Support
+			-- IIOP support</description>
+	<dependencies>
+		<dependency>
+			<groupId>org.jaaslounge</groupId>
+			<artifactId>jaaslounge-decoding</artifactId>
+			<version>2.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.security.auth.message</groupId>
+			<artifactId>javax.security.auth.message-api</artifactId>
+			<version>1.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+			<type>jar</type>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.8</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.1</version>
+		</dependency>
+	</dependencies>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	<build>
+		<defaultGoal>clean package</defaultGoal>
+	</build>
+</project>
