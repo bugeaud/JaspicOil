@@ -18,6 +18,8 @@ import javax.security.auth.message.AuthException;
 import javax.security.auth.message.AuthStatus;
 import javax.security.auth.message.MessageInfo;
 import javax.security.auth.message.MessagePolicy;
+import javax.security.auth.message.callback.CallerPrincipalCallback;
+import javax.security.auth.message.callback.PasswordValidationCallback;
 import javax.security.auth.message.module.ServerAuthModule;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -170,7 +172,7 @@ public class SimpleBasicServerAuthModule implements ServerAuthModule {
 	 *         failed and that an appropriate failure response message is
 	 *         available by calling getResponseMessage on messageInfo.
 	 *         </ul>
-	 *         throws AuthException When the message processing failed without
+	 * @throws AuthException When the message processing failed without
 	 *         establishing a failure response message (in messageInfo).
 	 */
 	public AuthStatus validateRequest(MessageInfo messageInfo,
@@ -181,9 +183,9 @@ public class SimpleBasicServerAuthModule implements ServerAuthModule {
 		final HttpServletResponse response = (HttpServletResponse) messageInfo
 				.getResponseMessage();
 		final String auth = request.getHeader(AUTHORIZATION_HEADER);
-		// Test prefix for HTTP BASIC
-		if (auth == null || !StringUtils.startsWithIgnoreCase(auth, "basic ")) {
-			// Then decode the
+		// Test prefix for HTTP BASIC Auth
+		if (auth != null && StringUtils.startsWithIgnoreCase(auth, "basic ")) {
+			// We might have a valid header, so try to decode it
 			final String data = new String(Base64.decodeBase64(auth
 					.substring(BASIC_PREFIX_LENGTH)), UTF_8);
 			final int splitIndex = data.indexOf(':');
@@ -195,6 +197,7 @@ public class SimpleBasicServerAuthModule implements ServerAuthModule {
 			final char[] password = data.substring(splitIndex + 1,
 					data.length()).toCharArray();
 
+			// Prepare the JAAS callback to feed any LoginModule with user and password
 			final NameCallback nameCallback = new NameCallback("username");
 			nameCallback.setName(username);
 
@@ -202,7 +205,7 @@ public class SimpleBasicServerAuthModule implements ServerAuthModule {
 					getRealm(request), false);
 			passwordCallback.setPassword(password);
 
-			final CallbackHandler handle = new CallbackHandler() {
+			final CallbackHandler delegatedHandler = new CallbackHandler() {
 				public void handle(Callback[] callbacks) throws IOException,
 						UnsupportedCallbackException {
 					for (int i = 0; i < callbacks.length; i++) {
@@ -213,31 +216,33 @@ public class SimpleBasicServerAuthModule implements ServerAuthModule {
 							((PasswordCallback) c).setPassword(password);
 						} else {
 							throw new UnsupportedOperationException(
-									"Not supported yet.");
+									String.format("Callback type %s (%s) is not supported yet.",c.getClass(),c));
 						}
 					}
 				}
 			};
 
-			if (this.jaasContextName != null) {
-				// When ther is a delegated JAAS context, we will try to logon
-				LoginContext context;
-				try {
-					context = new LoginContext(this.jaasContextName, handle);
-					context.login();
-				} catch (final LoginException ex) {
-
-					Logger.getLogger(
-							SimpleBasicServerAuthModule.class.getName()).log(
-							Level.SEVERE, null, ex);
-				}
+			if (this.jaasContextName == null) {
+			    throw new UnsupportedOperationException("No delegate JAAS context found. As per JASPIC JAAS Bridge profile, this parameter is requiered.");
 			}
 
 			try {
-				// notify caller for the name and password
-				this.handler.handle(new Callback[] { nameCallback,
-						passwordCallback });
+				// Create a new JAAS context with the delegated data & try to login
+				final LoginContext context = new LoginContext(this.jaasContextName, delegatedHandler);
+				context.login();
+				
+				// Get the authenticated subject from the JAAS context
+				Subject authenticatedSubject = context.getSubject();
 
+				final PasswordValidationCallback passwordValidationCallback = new PasswordValidationCallback(authenticatedSubject, username,password);
+				
+				// notify JASPIC containerr for the name, password and subject
+				this.handler.handle(new Callback[] { passwordValidationCallback });
+
+			} catch (final LoginException ex) {
+			    // If there was any issue during the JAAS login, fail the process
+			    final AuthException aex = new AuthException(String.format("Fail to login user %s with the delegated JAAS context %s",username,this.jaasContextName));
+			    aex.initCause(ex);
 			} catch (final IOException e) {
 				LOG.log(Level.WARNING, "Unable to call the handlers for name="
 						+ nameCallback, e);
@@ -250,7 +255,7 @@ public class SimpleBasicServerAuthModule implements ServerAuthModule {
 			return sendErrorAndAuthenticateRequest(request, response,
 					"AuthModule was mandatory but no valid credential was provided");
 		} else {
-			LOG.info("Basic AuthModule not so return SUCCESS.");
+			LOG.info("No authentication was provided bu Basic AuthModule is not mandatory so return SUCCESS.");
 		}
 
 		return AuthStatus.SUCCESS;
@@ -258,7 +263,7 @@ public class SimpleBasicServerAuthModule implements ServerAuthModule {
 
 	private String getRealm(HttpServletRequest request) {
 		// TODO should implement this dynamically
-		return "test";
+		return "FakeRealm";
 	}
 
 	private AuthStatus sendErrorAndAuthenticateRequest(
@@ -341,7 +346,7 @@ public class SimpleBasicServerAuthModule implements ServerAuthModule {
 	 *         failure response message is available by calling
 	 *         getResponseMeessage on messageInfo.
 	 *         </ul>
-	 *         throws AuthException When the message processing failed without
+	 * @throws AuthException When the message processing failed without
 	 *         establishing a failure response message (in messageInfo).
 	 */
 	public AuthStatus secureResponse(MessageInfo messageInfo,
@@ -361,8 +366,8 @@ public class SimpleBasicServerAuthModule implements ServerAuthModule {
 	 *            exchange.
 	 * @param subject
 	 *            the Subject instance from which the Principals and credentials
-	 *            are to be removed. throws AuthException If an error occurs
-	 *            during the Subject processing.
+	 *            are to be removed.
+	 * @throws AuthException If an error occur during the Subject processing.
 	 */
 	public void cleanSubject(MessageInfo messageInfo, Subject clientSubject)
 			throws AuthException {

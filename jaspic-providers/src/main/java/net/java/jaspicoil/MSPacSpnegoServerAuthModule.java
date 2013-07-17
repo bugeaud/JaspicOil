@@ -651,7 +651,7 @@ public class MSPacSpnegoServerAuthModule implements ServerAuthModule {
 	 *         failed and that an appropriate failure response message is
 	 *         available by calling getResponseMessage on messageInfo.
 	 *         </ul>
-	 *         throws AuthException When the message processing failed without
+	 * @throws AuthException When the message processing failed without
 	 *         establishing a failure response message (in messageInfo).
 	 */
 	@SuppressWarnings("unchecked")
@@ -895,7 +895,7 @@ public class MSPacSpnegoServerAuthModule implements ServerAuthModule {
 	 *         failure response message is available by calling
 	 *         getResponseMeessage on messageInfo.
 	 *         </ul>
-	 *         throws AuthException When the message processing failed without
+	 * @throws AuthException When the message processing failed without
 	 *         establishing a failure response message (in messageInfo).
 	 */
 	public AuthStatus secureResponse(MessageInfo messageInfo,

@@ -27,8 +27,9 @@
 
     <modules>
         <module>jaspic-providers</module>
- <!--       <module>tai-container</module>
         <module>tomcat-container</module>
+ <!--       <module>tai-container</module>
+
 -->		
     </modules>
 
