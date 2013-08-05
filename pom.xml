@@ -9,8 +9,8 @@
 
     <name>JaspicOil Project</name>
     <description>JaspicOil project provides various JASPIC (JSR-196) implementations of providers and containers.</description>
-    <url>http://www.jaaslounge.org</url>
-    <inceptionYear>2010</inceptionYear>
+    <url>http://jaspicoil.java.net/</url>
+    <inceptionYear>2011</inceptionYear>
 	
     <licenses>
         <license>
